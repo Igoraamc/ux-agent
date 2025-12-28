@@ -3,7 +3,7 @@ const clickTool = {
   description:
     "Click on an interactive element identified by its index number in the screenshot",
   input_schema: {
-    type: "object",
+    type: "object" as const,
     properties: {
       element_index: {
         type: "number",
@@ -23,7 +23,7 @@ const typeTool = {
   name: "type",
   description: "Type text into an input field identified by its index number",
   input_schema: {
-    type: "object",
+    type: "object" as const,
     properties: {
       element_index: {
         type: "number",
@@ -46,7 +46,7 @@ const scrollTool = {
   name: "scroll",
   description: "Scroll the page to reveal more content",
   input_schema: {
-    type: "object",
+    type: "object" as const,
     properties: {
       direction: {
         type: "string",
@@ -67,7 +67,7 @@ const waitTool = {
   description:
     "Wait for the page to load or update. Use when expecting content to change.",
   input_schema: {
-    type: "object",
+    type: "object" as const,
     properties: {
       seconds: {
         type: "number",
@@ -87,7 +87,7 @@ const doneTool = {
   description:
     "Mark the test as complete. Use when the expected result has been achieved.",
   input_schema: {
-    type: "object",
+    type: "object" as const,
     properties: {
       summary: {
         type: "string",
@@ -107,7 +107,7 @@ const failTool = {
   description:
     "Mark the test as failed. Use when the flow cannot be completed.",
   input_schema: {
-    type: "object",
+    type: "object" as const,
     properties: {
       reason: {
         type: "string",
