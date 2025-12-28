@@ -1,8 +1,10 @@
 import { chromium } from "playwright";
 import type { Browser, Page } from "playwright";
 import { createElementDetector } from "./detector.js";
+import { validateUrl } from "../utils/validate.js";
+import type { BrowserAdapter } from "./types.js";
 
-export function createBrowser() {
+export function createPlaywrightAdapter(): BrowserAdapter {
   let browser: Browser | null = null;
   let page: Page | null = null;
   let allowedDomain: string | null = null;
@@ -21,18 +23,6 @@ export function createBrowser() {
     async goto(url: string) {
       if (!page) {
         throw new Error("Browser not initialized. Call initialize() first.");
-      }
-
-      const targetDomain = new URL(url).hostname;
-
-      if (!allowedDomain) {
-        allowedDomain = targetDomain;
-      }
-
-      if (targetDomain !== allowedDomain) {
-        throw new Error(
-          `Navigation blocked: ${targetDomain} is outside allowed domain`,
-        );
       }
 
       await page.goto(url);
