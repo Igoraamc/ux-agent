@@ -1,4 +1,5 @@
 import { annotateScreenshot } from "./agent/annotator.js";
+import { createClaudeAgent } from "./ai/claude.js";
 import { createBrowserService } from "./browser/browser-service.js";
 import { createPlaywrightAdapter } from "./browser/playwright.js";
 
@@ -26,6 +27,15 @@ async function main() {
     const annotatedScreenshot = await annotateScreenshot(
       screenshot,
       interactiveElements,
+    );
+
+    const agent = createClaudeAgent();
+
+    agent.getNextAction(
+      annotatedScreenshot,
+      interactiveElements,
+      "Try to click in the create an acount button",
+      "Go to Sign Up page",
     );
 
     const fs = await import("fs/promises");
