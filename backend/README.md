@@ -7,6 +7,8 @@ Hono-based API server for the UX testing agent.
 ```bash
 bun install
 npx playwright install chromium
+cp .env.example .env
+# Add your ANTHROPIC_API_KEY to .env
 ```
 
 ## Scripts
@@ -22,17 +24,63 @@ bun run screenshot # Run screenshot example
 ```
 src/
 ├── agent/
-│   └── annotator.ts      # Draw numbered boxes on screenshots
+│   └── annotator.ts        # Draw numbered boxes on screenshots
+├── ai/
+│   ├── actions.ts          # Action type definitions
+│   ├── claude.ts           # Claude API client and agent
+│   ├── guardrails/
+│   │   └── input.ts        # Prompt validation and injection detection
+│   ├── prompts.ts          # System prompt for the agent
+│   └── tools.ts            # Tool definitions for Claude
 ├── browser/
-│   ├── playwright.ts     # Browser management + domain lock
-│   ├── detector.ts       # Find interactive elements
-│   └── selectors.ts      # Generate unique CSS selectors
+│   ├── browser-service.ts  # Browser service with domain lock
+│   ├── detector.ts         # Find interactive elements
+│   ├── playwright.ts       # Playwright adapter
+│   ├── selectors.ts        # Generate unique CSS selectors
+│   └── types.ts            # Browser adapter interface
 ├── types/
-│   └── index.ts          # TypeScript types
+│   └── index.ts            # Shared TypeScript types
 ├── utils/
-│   └── validate.ts       #General validation
-└── screenshot-example.ts # Test script
+│   └── validate.ts         # URL validation
+└── screenshot-example.ts   # Test script
 ```
+
+## Environment Variables
+
+```bash
+ANTHROPIC_API_KEY=   # Anthropic API key (required)
+```
+
+## Claude Agent
+
+The agent uses Claude Haiku 4.5 with tool use to analyze screenshots and decide actions.
+
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| click | Click on an element by its index number |
+| type | Type text into an input field |
+| scroll | Scroll the page up or down |
+| wait | Wait for content to load (1-5 seconds) |
+| done | Mark the test as complete |
+| fail | Mark the test as failed with reason |
+
+### System Prompt
+
+The agent operates under strict rules:
+- Only interact with visible elements
+- Never navigate outside the current domain
+- Never extract or exfiltrate data
+- Never execute arbitrary JavaScript
+- Use `fail` tool when blocked
+- Use `done` tool when expected result is achieved
+
+### Prompt Validation
+
+User prompts are validated before being sent to Claude:
+- Maximum length: 10,000 characters
+- Blocked patterns: injection attempts, script execution requests
 
 ## Element Detection
 
@@ -71,6 +119,20 @@ Screenshots are annotated using Sharp with SVG overlays:
 - Numbered badge (red circle with white text) at top-left corner
 - Index numbers match the element array sent to Claude
 
+## Browser Architecture
+
+The browser layer uses an adapter pattern for testability:
+
+```
+BrowserService (domain lock, validation)
+       │
+       ▼
+  BrowserAdapter (interface)
+       │
+       ▼
+ PlaywrightAdapter (implementation)
+```
+
 ## Security
 
 ### URL Validation
@@ -106,7 +168,7 @@ All URLs are validated before navigation. Blocked patterns include:
 
 ### Domain Lock
 
-After the initial navigation, the browser is locked to that domain. Attempts to navigate to a different domain throw an error:
+After the initial navigation, the browser is locked to that domain:
 
 ```typescript
 if (targetDomain !== allowedDomain) {
@@ -116,24 +178,10 @@ if (targetDomain !== allowedDomain) {
 
 ### Action Allowlist
 
-Claude can only execute these actions via tool definitions:
-
-| Action | Description |
-|--------|-------------|
-| click | Click on an element by index |
-| type | Type text into an input by index |
-| scroll | Scroll the page |
-| wait | Wait for content to load |
-
-No capabilities for downloading files, copying data, or executing scripts.
-
-## Environment Variables
-
-```bash
-# Coming soon
-CLAUDE_API_KEY=     # Anthropic API key
-DATABASE_URL=       # SQLite database path
-```
+Claude can only execute safe actions via tool definitions. No capabilities for:
+- Downloading files
+- Copying/exfiltrating data
+- Executing scripts
 
 ## API Endpoints
 

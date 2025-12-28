@@ -20,7 +20,7 @@ An AI-powered autonomous UX testing agent that uses Claude API and Playwright to
 |-------|------------|
 | Backend | TypeScript, Hono, Playwright, Sharp, Drizzle ORM, SQLite |
 | Frontend | SvelteKit, Tailwind CSS, shadcn-svelte |
-| AI | Claude API with tool use |
+| AI | Claude API (claude-haiku-4-5) with tool use |
 | Streaming | Server-Sent Events (SSE) |
 | Runtime | Bun (package manager) + Node/tsx (runtime)* |
 
@@ -44,6 +44,7 @@ See component READMEs for details:
 
 - Node.js 18+
 - Bun (for package management)
+- Anthropic API key
 
 ### Installation
 
@@ -51,6 +52,8 @@ See component READMEs for details:
 cd backend
 bun install
 npx playwright install chromium
+cp .env.example .env
+# Add your ANTHROPIC_API_KEY to .env
 ```
 
 ### Running
@@ -82,14 +85,28 @@ This provides clear visibility into agent behavior while keeping costs low (1 AP
 | Supervised | Shows each step with brief delay before continuing |
 | Manual | Waits for user approval before each action |
 
+### Agent Tools
+
+The Claude agent can perform these actions:
+
+| Tool | Description |
+|------|-------------|
+| click | Click on an element by index |
+| type | Type text into an input field |
+| scroll | Scroll the page up or down |
+| wait | Wait for content to load |
+| done | Mark test as complete |
+| fail | Mark test as failed with reason |
+
 ## Security Overview
 
 The agent has browser access, so multiple security layers are implemented:
 
 - **URL Blocklist** - Blocks local networks, cloud metadata, dangerous protocols
 - **Domain Lock** - Agent stays within the starting domain
-- **Action Allowlist** - Only safe actions (click, type, scroll, wait)
+- **Action Allowlist** - Only safe actions via Claude tool definitions
 - **Prompt Validation** - Checks for injection attempts
+- **System Prompt Guardrails** - Claude instructed to refuse data extraction
 
 See [Backend README](./backend/README.md) for detailed security implementation.
 
@@ -97,15 +114,18 @@ See [Backend README](./backend/README.md) for detailed security implementation.
 
 ### Implemented
 
-- Playwright browser manager
+- Playwright browser manager with adapter pattern
 - Interactive element detection
 - Unique selector generation
 - Screenshot annotation with numbered badges
 - URL blocklist and domain lock security
+- Claude agent with tool use integration
+- Agent tools (click, type, scroll, wait, done, fail)
+- Prompt validation and injection detection
+- System prompt with security guardrails
 
 ### Next Steps
 
-- Claude tool use integration
 - Agent loop implementation
 - SSE streaming
 - Database schema + persistence
