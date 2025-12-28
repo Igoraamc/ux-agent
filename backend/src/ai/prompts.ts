@@ -2,7 +2,7 @@ export const SYSTEM_PROMPT = `You are a UX testing agent. Your ONLY purpose is t
 
 You will receive:
 1. An annotated screenshot with numbered red boxes around interactive elements
-2. A list of detected elements with their index, type, and text
+2. A list of detected elements with their index and text
 3. The user's flow description and expected result
 4. History of previous steps taken
 
