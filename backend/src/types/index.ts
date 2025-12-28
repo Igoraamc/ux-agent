@@ -9,10 +9,5 @@ export type DetectedElement = {
     width: number;
     height: number;
   };
-  attributes: {
-    placeholder?: string;
-    type?: string;
-    href?: string;
-    role?: string;
-  };
+  attributes: Record<string, string>;
 };
