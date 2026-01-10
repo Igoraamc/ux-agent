@@ -1,4 +1,6 @@
-import { runAgentLoop, type StepUpdate } from "./agent/loop.js";
+import { runAgentLoop } from "./agent/loop.js";
+import { generateUUIDv7 } from "./utils/uuid.js";
+import type { StepUpdate } from "./types/index.js";
 
 async function main() {
   const url = "https://github.com/login";
@@ -11,7 +13,10 @@ async function main() {
   console.log(`Expected: ${expectedResult}`);
   console.log("---");
 
+  const runId = generateUUIDv7();
+
   const result = await runAgentLoop(
+    runId,
     url,
     flowDescription,
     expectedResult,

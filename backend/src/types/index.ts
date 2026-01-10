@@ -1,3 +1,5 @@
+import type { AgentAction } from "../ai/actions.js";
+
 export type DetectedElement = {
   index: number;
   selector: string;
@@ -10,4 +12,22 @@ export type DetectedElement = {
     height: number;
   };
   attributes: Record<string, string>;
+};
+
+export type StepPhase = "thinking" | "acting" | "result";
+
+export type StepUpdate = {
+  step: number;
+  phase: StepPhase;
+  action?: AgentAction;
+  thinking?: string | null;
+  result?: string;
+  screenshot?: Buffer;
+};
+
+export type AgentResult = {
+  success: boolean;
+  steps: StepUpdate[];
+  summary: string;
+  error?: string;
 };

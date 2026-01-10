@@ -1,4 +1,5 @@
 import { sqliteTable, text, integer, blob } from "drizzle-orm/sqlite-core";
+import { relations } from "drizzle-orm";
 
 export const runs = sqliteTable("runs", {
   id: text("id").primaryKey(),
@@ -23,6 +24,10 @@ export const runs = sqliteTable("runs", {
   deletedAt: integer("deleted_at", { mode: "timestamp" }),
 });
 
+export const runsRelations = relations(runs, ({ many }) => ({
+  steps: many(steps),
+}));
+
 export const steps = sqliteTable("steps", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   runId: text("run_id")
@@ -39,6 +44,13 @@ export const steps = sqliteTable("steps", {
     .notNull()
     .$defaultFn(() => new Date()),
 });
+
+export const stepsRelations = relations(steps, ({ one }) => ({
+  run: one(runs, {
+    fields: [steps.runId],
+    references: [runs.id],
+  }),
+}));
 
 export type Run = typeof runs.$inferSelect;
 export type NewRun = typeof runs.$inferInsert;

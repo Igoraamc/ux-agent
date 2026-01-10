@@ -2,7 +2,9 @@ import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { validateUrl } from "../utils/validate.js";
 import { validatePrompt } from "../ai/guardrails/input.js";
-import { runAgentLoop, type StepUpdate } from "../agent/loop.js";
+import { runAgentLoop } from "../agent/loop.js";
+import { generateUUIDv7 } from "../utils/uuid.js";
+import type { StepUpdate } from "../types/index.js";
 
 const agent = new Hono();
 
@@ -53,13 +55,17 @@ agent.post("/run", async (c) => {
       });
     };
 
+    const runId = generateUUIDv7();
+
     await sendEvent("start", {
+      runId,
       url,
       flowDescription,
       expectedResult,
     });
 
     const result = await runAgentLoop(
+      runId,
       url,
       flowDescription,
       expectedResult,
