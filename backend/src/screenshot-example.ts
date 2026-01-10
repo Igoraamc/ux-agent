@@ -1,54 +1,45 @@
-import { annotateScreenshot } from "./agent/annotator.js";
-import { createClaudeAgent } from "./ai/claude.js";
-import { createBrowserService } from "./browser/browser-service.js";
-import { createPlaywrightAdapter } from "./browser/playwright.js";
+import { runAgentLoop, type StepUpdate } from "./agent/loop.js";
 
 async function main() {
-  const playwrightAdapter = createPlaywrightAdapter();
-  const browser = createBrowserService(playwrightAdapter);
+  const url = "https://github.com/login";
+  const flowDescription = "Try to click the 'Create an account' button";
+  const expectedResult = "Navigate to the sign up page";
 
-  try {
-    await browser.initialize();
-    console.log("Browser initialized");
+  console.log("Starting UX Agent...");
+  console.log(`URL: ${url}`);
+  console.log(`Flow: ${flowDescription}`);
+  console.log(`Expected: ${expectedResult}`);
+  console.log("---");
 
-    await browser.goto("https://github.com/login");
-    console.log("Navigated to https://github.com/login");
+  const result = await runAgentLoop(
+    url,
+    flowDescription,
+    expectedResult,
+    (update: StepUpdate) => {
+      console.log(`[Step ${update.step}] ${update.phase.toUpperCase()}`);
 
-    const interactiveElements = await browser.getInteractiveElements();
-    console.log(interactiveElements);
-    console.log("Interactive elements detected");
+      if (update.phase === "thinking" && update.thinking) {
+        console.log(`  Thinking: ${update.thinking}`);
+      }
 
-    const screenshot = await browser.screenshot("screenshot.png");
-    if (!screenshot) {
-      throw new Error("Failed to take screenshot");
-    }
-    console.log("Screenshot saved to screenshot.png");
+      if (update.phase === "acting" && update.action) {
+        console.log(`  Action: ${update.action.action}`);
+        console.log(`  Args: ${JSON.stringify(update.action.args)}`);
+      }
 
-    const annotatedScreenshot = await annotateScreenshot(
-      screenshot,
-      interactiveElements,
-    );
+      if (update.phase === "result" && update.result) {
+        console.log(`  Result: ${update.result}`);
+      }
+    },
+  );
 
-    const agent = createClaudeAgent();
-
-    agent.getNextAction(
-      annotatedScreenshot,
-      interactiveElements,
-      "Try to click in the create an acount button",
-      "Go to Sign Up page",
-    );
-
-    const fs = await import("fs/promises");
-    await fs.writeFile("annotated-screenshot.png", annotatedScreenshot);
-    console.log("Annotated screenshot saved to annotated-screenshot.png");
-
-    await browser.close();
-    console.log("Done");
-  } catch (error) {
-    console.error("Error:", error);
-    await browser.close();
-    process.exit(1);
+  console.log("---");
+  console.log(`Success: ${result.success}`);
+  console.log(`Summary: ${result.summary}`);
+  if (result.error) {
+    console.log(`Error: ${result.error}`);
   }
+  console.log(`Total steps: ${result.steps.length / 3}`);
 }
 
 main();
