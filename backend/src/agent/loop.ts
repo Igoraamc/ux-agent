@@ -4,6 +4,7 @@ import { createClaudeAgent } from "../ai/claude.js";
 import { annotateScreenshot } from "./annotator.js";
 import { persistStep, updateRunStatus, createRun } from "./persistence.js";
 import { executeAction } from "./executor.js";
+import { createRunLogger, createStepLogger } from "../lib/logger.js";
 import type { AgentResult, StepUpdate } from "../types/index.js";
 
 const MAX_STEPS = 15;
@@ -17,6 +18,11 @@ export async function runAgentLoop(
   expectedResult: string,
   onStepUpdate?: OnStepUpdate,
 ): Promise<AgentResult> {
+  const runLog = createRunLogger(runId);
+  const runStartTime = Date.now();
+
+  runLog.info({ url, flowDescription, expectedResult }, "Run started");
+
   const adapter = createPlaywrightAdapter();
   const browser = createBrowserService(adapter);
   const claude = createClaudeAgent();
@@ -56,18 +62,35 @@ export async function runAgentLoop(
 
     while (stepNumber < MAX_STEPS) {
       stepNumber++;
+      const stepLog = createStepLogger(runId, stepNumber);
       let phaseStart = Date.now();
 
       const screenshot = await browser.screenshot();
       const elements = await browser.getInteractiveElements();
       const annotated = await annotateScreenshot(screenshot, elements);
 
+      stepLog.debug(
+        { elementsCount: elements.length, durationMs: Date.now() - phaseStart },
+        "Screenshot captured",
+      );
+
+      phaseStart = Date.now();
       const response = await claude.getNextAction(
         annotated,
         elements,
         flowDescription,
         expectedResult,
         actionHistory,
+      );
+
+      stepLog.info(
+        {
+          action: response.action.action,
+          args: response.action.args,
+          thinkingLength: response.thinking?.length ?? 0,
+          durationMs: Date.now() - phaseStart,
+        },
+        "Claude responded",
       );
 
       await emitUpdate(
@@ -94,6 +117,15 @@ export async function runAgentLoop(
       phaseStart = Date.now();
       const result = await executeAction(browser, response.action, elements);
 
+      stepLog.info(
+        {
+          action: response.action.action,
+          result,
+          durationMs: Date.now() - phaseStart,
+        },
+        "Action executed",
+      );
+
       actionHistory.push(result);
 
       await emitUpdate(
@@ -116,6 +148,15 @@ export async function runAgentLoop(
           steps,
           summary: args.summary,
         };
+        runLog.info(
+          {
+            success: args.expected_result_achieved,
+            totalSteps: stepNumber,
+            durationMs: Date.now() - runStartTime,
+            summary: args.summary,
+          },
+          "Run completed",
+        );
         await updateRunStatus(runId, "completed", agentResult);
         return agentResult;
       }
@@ -131,6 +172,15 @@ export async function runAgentLoop(
           steps,
           summary: `Test failed: ${args.reason}. Blocker: ${args.blocker}`,
         };
+        runLog.warn(
+          {
+            totalSteps: stepNumber,
+            durationMs: Date.now() - runStartTime,
+            reason: args.reason,
+            blocker: args.blocker,
+          },
+          "Run failed by agent",
+        );
         await updateRunStatus(runId, "failed", agentResult);
         return agentResult;
       }
@@ -142,6 +192,10 @@ export async function runAgentLoop(
       steps,
       summary: `Test stopped after reaching ${MAX_STEPS} step limit`,
     };
+    runLog.warn(
+      { maxSteps: MAX_STEPS, durationMs: Date.now() - runStartTime },
+      "Run stopped: max steps reached",
+    );
     await updateRunStatus(runId, "failed", agentResult);
     return agentResult;
   } catch (error) {
@@ -153,6 +207,14 @@ export async function runAgentLoop(
       summary: "Test failed due to error",
       error: errorMessage,
     };
+    runLog.error(
+      {
+        error: errorMessage,
+        totalSteps: stepNumber,
+        durationMs: Date.now() - runStartTime,
+      },
+      "Run failed with error",
+    );
     await updateRunStatus(runId, "failed", agentResult);
     return agentResult;
   }

@@ -3,6 +3,7 @@ import type { DetectedElement } from "../types/index.js";
 import type { AgentAction } from "./actions.js";
 import { AGENT_TOOLS } from "./tools.js";
 import { SYSTEM_PROMPT } from "./prompts.js";
+import { claudeLogger } from "../lib/logger.js";
 import "dotenv/config";
 
 export type AgentResponse = {
@@ -31,6 +32,8 @@ export function createClaudeAgent() {
                   </previous-actions>
                   `
           : "";
+
+      const startTime = Date.now();
 
       const response = await client.messages.create({
         max_tokens: 1000,
@@ -79,6 +82,17 @@ export function createClaudeAgent() {
         tools: AGENT_TOOLS,
       });
 
+      claudeLogger.debug(
+        {
+          model: "claude-haiku-4-5-20251001",
+          inputTokens: response.usage?.input_tokens,
+          outputTokens: response.usage?.output_tokens,
+          stopReason: response.stop_reason,
+          durationMs: Date.now() - startTime,
+        },
+        "Claude API call completed",
+      );
+
       let thinking: string | null = null;
       let action: AgentAction | null = null;
 
@@ -94,6 +108,10 @@ export function createClaudeAgent() {
       }
 
       if (!action) {
+        claudeLogger.error(
+          { responseContent: response.content },
+          "Claude did not return a tool use action",
+        );
         throw new Error("Claude did not return a tool use action");
       }
 

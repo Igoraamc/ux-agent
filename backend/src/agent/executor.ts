@@ -1,6 +1,7 @@
 import { createBrowserService } from "../browser/browser-service.js";
 import type { AgentAction } from "../ai/actions.js";
 import type { DetectedElement } from "../types/index.js";
+import { agentLogger } from "../lib/logger.js";
 
 export async function executeAction(
   browser: ReturnType<typeof createBrowserService>,
@@ -13,6 +14,14 @@ export async function executeAction(
         (e) => e.index === action.args.element_index,
       );
       if (!element) {
+        agentLogger.warn(
+          {
+            actionType: "click",
+            elementIndex: action.args.element_index,
+            availableIndices: elements.map((e) => e.index),
+          },
+          "Element not found for click",
+        );
         throw new Error(
           `Element with index ${action.args.element_index} not found`,
         );
@@ -27,6 +36,14 @@ export async function executeAction(
         (e) => e.index === action.args.element_index,
       );
       if (!element) {
+        agentLogger.warn(
+          {
+            actionType: "type",
+            elementIndex: action.args.element_index,
+            availableIndices: elements.map((e) => e.index),
+          },
+          "Element not found for type",
+        );
         throw new Error(
           `Element with index ${action.args.element_index} not found`,
         );
