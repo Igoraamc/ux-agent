@@ -123,11 +123,11 @@ See [Backend README](./backend/README.md) for detailed security implementation.
 - Agent tools (click, type, scroll, wait, done, fail)
 - Prompt validation and injection detection
 - System prompt with security guardrails
+- Agent loop with action execution
+- Hono API server with SSE streaming
 
 ### Next Steps
 
-- Agent loop implementation
-- SSE streaming
 - Database schema + persistence
 - Frontend UI
 

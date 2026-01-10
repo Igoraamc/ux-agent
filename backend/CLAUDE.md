@@ -14,7 +14,7 @@
 
 ### Project Status
 
-**Active Development**: Core browser automation, element detection, screenshot annotation, and Claude integration implemented. Agent loop and API endpoints pending.
+**Active Development**: Core browser automation, element detection, screenshot annotation, Claude integration, agent loop, and API with SSE streaming implemented. Database persistence and frontend pending.
 
 ## Repository Structure
 
@@ -23,7 +23,8 @@ ux-agent/
 ├── backend/
 │   ├── src/
 │   │   ├── agent/
-│   │   │   └── annotator.ts        # Screenshot annotation with Sharp
+│   │   │   ├── annotator.ts        # Screenshot annotation with Sharp
+│   │   │   └── loop.ts             # Agent loop orchestration
 │   │   ├── ai/
 │   │   │   ├── actions.ts          # Action type definitions
 │   │   │   ├── claude.ts           # Claude API client
@@ -37,10 +38,14 @@ ux-agent/
 │   │   │   ├── playwright.ts       # Playwright adapter
 │   │   │   ├── selectors.ts        # Selector generation
 │   │   │   └── types.ts            # Browser adapter interface
+│   │   ├── routes/
+│   │   │   ├── index.ts            # Route aggregator
+│   │   │   └── agent.ts            # Agent run endpoint with SSE
 │   │   ├── types/
 │   │   │   └── index.ts            # Shared types
 │   │   ├── utils/
 │   │   │   └── validate.ts         # URL validation
+│   │   ├── index.ts                # Server entry point
 │   │   └── screenshot-example.ts   # Example script
 │   ├── .env.example                # Environment template
 │   ├── package.json
@@ -58,7 +63,7 @@ ux-agent/
 - **Browser Automation**: Playwright
 - **Image Processing**: Sharp
 - **AI**: Anthropic Claude API (claude-haiku-4-5)
-- **Web Framework**: Hono (pending)
+- **Web Framework**: Hono with @hono/node-server
 - **Database**: Drizzle ORM + SQLite (pending)
 
 ## Key Files
@@ -110,6 +115,10 @@ Playwright adapter implementing `BrowserAdapter` interface:
 - `goto(url)` - Navigate to URL
 - `screenshot()` - Capture page
 - `getInteractiveElements()` - Detect elements
+- `click(selector)` - Click an element
+- `type(selector, text)` - Type into an input
+- `scroll(direction)` - Scroll up/down
+- `waitForLoadState()` - Wait for network idle
 - `close()` - Cleanup
 
 #### `detector.ts`
@@ -135,6 +144,38 @@ Generates unique CSS selectors in priority order:
 
 #### `annotator.ts`
 Draws red boxes and numbered badges on screenshots using Sharp SVG overlays.
+
+#### `loop.ts`
+Agent loop orchestration. Runs the test flow until completion, failure, or step limit.
+
+```typescript
+const result = await runAgentLoop(url, flowDescription, expectedResult, onStepUpdate);
+// result: { success, steps, summary, error? }
+```
+
+Key features:
+- 15-step maximum limit
+- Three-phase updates per step (thinking, acting, result)
+- Action history passed to Claude for context
+- Handles terminal actions (done/fail)
+
+### API Layer (`/backend/src/routes/`)
+
+#### `index.ts`
+Route aggregator. Mounts all routes and provides health check endpoint.
+
+#### `agent.ts`
+Agent run endpoint with SSE streaming.
+
+```typescript
+POST /run
+// Request: { url, flowDescription, expectedResult }
+// Response: SSE stream with events: start, step, complete
+```
+
+### Server (`/backend/src/index.ts`)
+
+Entry point. Sets up Hono app with CORS and routes, starts Node.js server.
 
 ### Utils (`/backend/src/utils/`)
 
@@ -162,6 +203,10 @@ interface BrowserAdapter {
   screenshot(path?: string): Promise<Buffer>;
   close(): Promise<void>;
   getInteractiveElements(): Promise<DetectedElement[]>;
+  click(selector: string): Promise<void>;
+  type(selector: string, text: string): Promise<void>;
+  scroll(direction: "up" | "down"): Promise<void>;
+  waitForLoadState(): Promise<void>;
 }
 ```
 
@@ -186,6 +231,7 @@ cp .env.example .env
 ### Run
 ```bash
 bun run dev        # Watch mode
+bun run start      # Production mode
 bun run screenshot # Test script
 ```
 
@@ -229,10 +275,10 @@ fix(browser): handle navigation timeout
 
 ## Pending Implementation
 
-- [ ] Agent loop (iterate until done/fail/limit)
-- [ ] Action execution (click, type, scroll, wait)
-- [ ] SSE streaming for real-time updates
-- [ ] Hono API endpoints
+- [x] Agent loop (iterate until done/fail/limit)
+- [x] Action execution (click, type, scroll, wait)
+- [x] SSE streaming for real-time updates
+- [x] Hono API endpoints
 - [ ] Database persistence with Drizzle
 - [ ] Frontend UI
 
@@ -246,3 +292,6 @@ fix(browser): handle navigation timeout
 | Add element selector | `/backend/src/browser/selectors.ts` |
 | Add URL block pattern | `/backend/src/utils/validate.ts` |
 | Add prompt block pattern | `/backend/src/ai/guardrails/input.ts` |
+| Modify agent loop | `/backend/src/agent/loop.ts` |
+| Add API route | `/backend/src/routes/` |
+| Modify server config | `/backend/src/index.ts` |

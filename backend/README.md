@@ -24,7 +24,8 @@ bun run screenshot # Run screenshot example
 ```
 src/
 ├── agent/
-│   └── annotator.ts        # Draw numbered boxes on screenshots
+│   ├── annotator.ts        # Draw numbered boxes on screenshots
+│   └── loop.ts             # Agent loop orchestration
 ├── ai/
 │   ├── actions.ts          # Action type definitions
 │   ├── claude.ts           # Claude API client and agent
@@ -38,10 +39,14 @@ src/
 │   ├── playwright.ts       # Playwright adapter
 │   ├── selectors.ts        # Generate unique CSS selectors
 │   └── types.ts            # Browser adapter interface
+├── routes/
+│   ├── index.ts            # Route aggregator
+│   └── agent.ts            # Agent run endpoint with SSE
 ├── types/
 │   └── index.ts            # Shared TypeScript types
 ├── utils/
 │   └── validate.ts         # URL validation
+├── index.ts                # Server entry point
 └── screenshot-example.ts   # Test script
 ```
 
@@ -185,12 +190,73 @@ Claude can only execute safe actions via tool definitions. No capabilities for:
 
 ## API Endpoints
 
-*Coming soon*
+### Health Check
 
 ```
-POST /api/tests           # Start a new test
-GET  /api/tests/:id       # Get test status
-GET  /api/tests/:id/stream # SSE stream for real-time updates
+GET /
+```
+
+Returns server status.
+
+**Response:**
+```json
+{"status": "ok", "service": "ux-agent"}
+```
+
+### Run Agent
+
+```
+POST /run
+Content-Type: application/json
+```
+
+Starts an agent run and streams progress via SSE.
+
+**Request Body:**
+```json
+{
+  "url": "https://example.com",
+  "flowDescription": "Click the login button",
+  "expectedResult": "See login form"
+}
+```
+
+**Validation:**
+- `url` - Must pass URL blocklist validation
+- `flowDescription` - Max 10,000 chars, no injection patterns
+- `expectedResult` - Max 10,000 chars, no injection patterns
+
+**Response:** Server-Sent Events stream
+
+### SSE Events
+
+| Event | Description | Data |
+|-------|-------------|------|
+| `start` | Agent started | `{url, flowDescription, expectedResult}` |
+| `step` | Step update | `{step, phase, action?, thinking?, result?, screenshot?}` |
+| `complete` | Agent finished | `{success, summary, error?, totalSteps}` |
+
+**Step Phases:**
+- `thinking` - Claude's reasoning (includes base64 screenshot)
+- `acting` - Action being executed
+- `result` - Outcome of the action
+
+**Example SSE Stream:**
+```
+event: start
+data: {"url":"https://github.com/login","flowDescription":"Click Create account","expectedResult":"See signup page"}
+
+event: step
+data: {"step":1,"phase":"thinking","thinking":"I see the login page...","screenshot":"iVBORw0KGgo..."}
+
+event: step
+data: {"step":1,"phase":"acting","action":{"action":"click","args":{"element_index":6,"reason":"Click Create account"}}}
+
+event: step
+data: {"step":1,"phase":"result","result":"Clicked element 6: \"Create an account\""}
+
+event: complete
+data: {"success":true,"summary":"Successfully navigated to signup page","totalSteps":2}
 ```
 
 ## Database Schema
