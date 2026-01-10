@@ -62,12 +62,16 @@ export function createPlaywrightAdapter(): BrowserAdapter {
       await page.fill(selector, text);
     },
 
-    async scroll(direction: "up" | "down") {
+    async scroll(direction: "up" | "down" | "top") {
       if (!page) {
         throw new Error("Browser not initialized. Call initialize() first.");
       }
-      const scrollAmount = direction === "down" ? 500 : -500;
-      await page.evaluate((amount) => window.scrollBy(0, amount), scrollAmount);
+      if (direction === "top") {
+        await page.evaluate(() => window.scrollTo(0, 0));
+      } else {
+        const scrollAmount = direction === "down" ? 500 : -500;
+        await page.evaluate((amount) => window.scrollBy(0, amount), scrollAmount);
+      }
     },
 
     async waitForLoadState() {

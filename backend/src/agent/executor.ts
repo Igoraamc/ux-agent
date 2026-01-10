@@ -37,7 +37,9 @@ export async function executeAction(
 
     case "scroll": {
       await browser.scroll(action.args.direction);
-      return `Scrolled ${action.args.direction}`;
+      return action.args.direction === "top"
+        ? "Scrolled to top of page"
+        : `Scrolled ${action.args.direction}`;
     }
 
     case "wait": {

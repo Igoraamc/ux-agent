@@ -43,7 +43,7 @@ export function createBrowserService(adapter: BrowserAdapter) {
     async type(selector: string, text: string) {
       await adapter.type(selector, text);
     },
-    async scroll(direction: "up" | "down") {
+    async scroll(direction: "up" | "down" | "top") {
       await adapter.scroll(direction);
     },
     async waitForLoadState() {

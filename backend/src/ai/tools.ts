@@ -44,14 +44,15 @@ const typeTool = {
 
 const scrollTool = {
   name: "scroll",
-  description: "Scroll the page to reveal more content",
+  description:
+    "Scroll the page to reveal more content. Use 'top' to instantly scroll to the top of the page.",
   input_schema: {
     type: "object" as const,
     properties: {
       direction: {
         type: "string",
-        enum: ["up", "down"],
-        description: "Direction to scroll",
+        enum: ["up", "down", "top"],
+        description: "Direction to scroll. Use 'top' to jump to page start.",
       },
       reason: {
         type: "string",

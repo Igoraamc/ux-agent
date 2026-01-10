@@ -10,7 +10,7 @@ type TypeAction = {
 
 type ScrollAction = {
   action: "scroll";
-  args: { direction: "up" | "down"; reason: string };
+  args: { direction: "up" | "down" | "top"; reason: string };
 };
 
 type WaitAction = {
