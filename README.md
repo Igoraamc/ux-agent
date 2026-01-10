@@ -22,6 +22,8 @@ An AI-powered autonomous UX testing agent that uses Claude API and Playwright to
 | Frontend | SvelteKit, Tailwind CSS, shadcn-svelte |
 | AI | Claude API (claude-haiku-4-5) with tool use |
 | Streaming | Server-Sent Events (SSE) |
+| Logging | Pino with pino-pretty (dev) |
+| Testing | Bun test |
 | Runtime | Bun (package manager) + Node/tsx (runtime)* |
 
 *Playwright has compatibility issues with Bun runtime on Windows
@@ -93,7 +95,7 @@ The Claude agent can perform these actions:
 |------|-------------|
 | click | Click on an element by index |
 | type | Type text into an input field |
-| scroll | Scroll the page up or down |
+| scroll | Scroll the page up, down, or to top |
 | wait | Wait for content to load |
 | done | Mark test as complete |
 | fail | Mark test as failed with reason |
@@ -135,9 +137,12 @@ See [Backend README](./backend/README.md) for detailed security implementation.
 ### Next Steps
 
 - Frontend UI
-- Scroll top to avoid the model to scroll all the way up after reaching the bottom of the page
-- Add logs to the application to understand what is happening
-- Add unit tests
+
+### Recently Completed
+
+- Scroll to top action (scroll direction: "top")
+- Structured logging with Pino
+- Unit tests with Bun test (93 tests)
 
 ## License
 

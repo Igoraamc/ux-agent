@@ -14,11 +14,13 @@ cp .env.example .env
 ## Scripts
 
 ```bash
-bun run dev        # Development mode with hot reload
-bun run start      # Production mode
-bun run screenshot # Run screenshot example
+bun run dev         # Development mode with hot reload
+bun run start       # Production mode
+bun run screenshot  # Run screenshot example
 bun run db:generate # Generate migrations
 bun run db:migrate  # Run migrations
+bun test            # Run unit tests
+bun test --watch    # Watch mode for tests
 ```
 
 ## Project Structure
@@ -31,13 +33,15 @@ backend/
 │   ├── agent/
 │   │   ├── annotator.ts    # Draw numbered boxes on screenshots
 │   │   ├── executor.ts     # Agent action execution logic
+│   │   ├── executor.test.ts # Executor unit tests
 │   │   ├── loop.ts         # Agent loop orchestration
 │   │   └── persistence.ts  # Database persistence for runs and steps
 │   ├── ai/
 │   │   ├── actions.ts      # Action type definitions
 │   │   ├── claude.ts       # Claude API client and agent
 │   │   ├── guardrails/
-│   │   │   └── input.ts    # Prompt validation and injection detection
+│   │   │   ├── input.ts    # Prompt validation and injection detection
+│   │   │   └── input.test.ts # Prompt validation tests
 │   │   ├── prompts.ts      # System prompt for the agent
 │   │   └── tools.ts        # Tool definitions for Claude
 │   ├── browser/
@@ -45,10 +49,15 @@ backend/
 │   │   ├── detector.ts     # Find interactive elements
 │   │   ├── playwright.ts   # Playwright adapter
 │   │   ├── selectors.ts    # Generate unique CSS selectors
+│   │   ├── selectors.test.ts # Selector unit tests
 │   │   └── types.ts        # Browser adapter interface
 │   ├── db/
 │   │   ├── index.ts        # Database client initialization
 │   │   └── schema.ts       # Drizzle schema definitions
+│   ├── lib/
+│   │   └── logger.ts       # Pino logger configuration
+│   ├── middleware/
+│   │   └── request-logger.ts # HTTP request logging middleware
 │   ├── routes/
 │   │   ├── index.ts        # Route aggregator
 │   │   ├── agent.ts        # Agent run endpoint with SSE
@@ -57,7 +66,8 @@ backend/
 │   │   └── index.ts        # Shared TypeScript types
 │   ├── utils/
 │   │   ├── uuid.ts         # UUID v7 generation
-│   │   └── validate.ts     # URL validation
+│   │   ├── validate.ts     # URL validation
+│   │   └── validate.test.ts # URL validation tests
 │   ├── index.ts            # Server entry point
 │   └── screenshot-example.ts # Test script
 ├── drizzle.config.ts       # Drizzle configuration
@@ -69,6 +79,8 @@ backend/
 
 ```bash
 ANTHROPIC_API_KEY=   # Anthropic API key (required)
+LOG_LEVEL=debug      # Log level: debug, info, warn, error (optional)
+NODE_ENV=development # Environment: development, production (optional)
 ```
 
 ## Claude Agent
@@ -81,7 +93,7 @@ The agent uses Claude Haiku 4.5 with tool use to analyze screenshots and decide 
 |------|-------------|
 | click | Click on an element by its index number |
 | type | Type text into an input field |
-| scroll | Scroll the page up or down |
+| scroll | Scroll the page up, down, or to top |
 | wait | Wait for content to load (1-5 seconds) |
 | done | Mark the test as complete |
 | fail | Mark the test as failed with reason |
@@ -321,8 +333,35 @@ Using Drizzle ORM with SQLite.
 - `durationMs`: Time taken for the phase
 - `createdAt`: Timestamp
 
+## Logging
+
+The application uses Pino for structured logging:
+
+- **Development**: Pretty-printed colored output via pino-pretty
+- **Production**: JSON structured logs
+
+Log levels: `debug`, `info`, `warn`, `error`
+
+Loggers:
+- `httpLogger` - HTTP request/response logging
+- `agentLogger` - Agent loop and action logging
+- `claudeLogger` - Claude API call logging
+
+## Testing
+
+Unit tests use Bun's built-in test runner:
+
+```bash
+bun test           # Run all tests
+bun test --watch   # Watch mode
+```
+
+Test coverage:
+- URL validation (35 tests)
+- Selector generation (15 tests)
+- Prompt validation (21 tests)
+- Action execution (22 tests)
+
 ## Next Steps
 
-- Scroll top to avoid the model to scroll all the way up after reaching the bottom of the page
-- Add logs to the application to understand what is happening
-- Add unit tests
+- Frontend UI

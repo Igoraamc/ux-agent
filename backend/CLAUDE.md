@@ -14,7 +14,7 @@
 
 ### Project Status
 
-**Active Development**: Core browser automation, element detection, screenshot annotation, Claude integration, agent loop, and API with SSE streaming implemented. Database persistence and frontend pending.
+**Active Development**: Core browser automation, element detection, screenshot annotation, Claude integration, agent loop, API with SSE streaming, database persistence, logging, and unit testing implemented. Frontend pending.
 
 ## Repository Structure
 
@@ -24,7 +24,9 @@ ux-agent/
 │   ├── src/
 │   │   ├── agent/
 │   │   │   ├── annotator.ts        # Screenshot annotation with Sharp
-│   │   │   └── loop.ts             # Agent loop orchestration
+│   │   │   ├── executor.ts         # Action execution logic
+│   │   │   ├── loop.ts             # Agent loop orchestration
+│   │   │   └── persistence.ts      # Database persistence
 │   │   ├── ai/
 │   │   │   ├── actions.ts          # Action type definitions
 │   │   │   ├── claude.ts           # Claude API client
@@ -38,15 +40,23 @@ ux-agent/
 │   │   │   ├── playwright.ts       # Playwright adapter
 │   │   │   ├── selectors.ts        # Selector generation
 │   │   │   └── types.ts            # Browser adapter interface
+│   │   ├── db/
+│   │   │   ├── index.ts            # Database client
+│   │   │   └── schema.ts           # Drizzle schema
+│   │   ├── lib/
+│   │   │   └── logger.ts           # Pino logger setup
+│   │   ├── middleware/
+│   │   │   └── request-logger.ts   # HTTP request logging
 │   │   ├── routes/
 │   │   │   ├── index.ts            # Route aggregator
-│   │   │   └── agent.ts            # Agent run endpoint with SSE
+│   │   │   ├── agent.ts            # Agent run endpoint with SSE
+│   │   │   └── runs.ts             # Run history endpoints
 │   │   ├── types/
 │   │   │   └── index.ts            # Shared types
 │   │   ├── utils/
+│   │   │   ├── uuid.ts             # UUID v7 generation
 │   │   │   └── validate.ts         # URL validation
-│   │   ├── index.ts                # Server entry point
-│   │   └── screenshot-example.ts   # Example script
+│   │   └── index.ts                # Server entry point
 │   ├── .env.example                # Environment template
 │   ├── package.json
 │   └── README.md
@@ -64,7 +74,9 @@ ux-agent/
 - **Image Processing**: Sharp
 - **AI**: Anthropic Claude API (claude-haiku-4-5)
 - **Web Framework**: Hono with @hono/node-server
-- **Database**: Drizzle ORM + SQLite (pending)
+- **Database**: Drizzle ORM + SQLite
+- **Logging**: Pino with pino-pretty (dev)
+- **Testing**: Bun test
 
 ## Key Files
 
@@ -82,7 +94,7 @@ await agent.getNextAction(screenshot, elements, flowDescription, expectedResult)
 Tool definitions for Claude:
 - `click` - Click element by index
 - `type` - Type into input field
-- `scroll` - Scroll up/down
+- `scroll` - Scroll up/down/top
 - `wait` - Wait for content
 - `done` - Mark test complete
 - `fail` - Mark test failed
@@ -117,7 +129,7 @@ Playwright adapter implementing `BrowserAdapter` interface:
 - `getInteractiveElements()` - Detect elements
 - `click(selector)` - Click an element
 - `type(selector, text)` - Type into an input
-- `scroll(direction)` - Scroll up/down
+- `scroll(direction)` - Scroll up/down/top
 - `waitForLoadState()` - Wait for network idle
 - `close()` - Cleanup
 
@@ -205,7 +217,7 @@ interface BrowserAdapter {
   getInteractiveElements(): Promise<DetectedElement[]>;
   click(selector: string): Promise<void>;
   type(selector: string, text: string): Promise<void>;
-  scroll(direction: "up" | "down"): Promise<void>;
+  scroll(direction: "up" | "down" | "top"): Promise<void>;
   waitForLoadState(): Promise<void>;
 }
 ```
@@ -233,11 +245,15 @@ cp .env.example .env
 bun run dev        # Watch mode
 bun run start      # Production mode
 bun run screenshot # Test script
+bun test           # Run unit tests
+bun test --watch   # Watch mode for tests
 ```
 
 ### Environment Variables
 ```
 ANTHROPIC_API_KEY=   # Required
+LOG_LEVEL=debug      # Optional (debug, info, warn, error)
+NODE_ENV=development # Optional (development, production)
 ```
 
 ## Code Conventions
@@ -279,7 +295,10 @@ fix(browser): handle navigation timeout
 - [x] Action execution (click, type, scroll, wait)
 - [x] SSE streaming for real-time updates
 - [x] Hono API endpoints
-- [ ] Database persistence with Drizzle
+- [x] Database persistence with Drizzle
+- [x] Scroll to top action
+- [x] Logging with Pino
+- [x] Unit tests with Bun test
 - [ ] Frontend UI
 
 ## Quick Reference
@@ -295,3 +314,6 @@ fix(browser): handle navigation timeout
 | Modify agent loop | `/backend/src/agent/loop.ts` |
 | Add API route | `/backend/src/routes/` |
 | Modify server config | `/backend/src/index.ts` |
+| Configure logging | `/backend/src/lib/logger.ts` |
+| Add HTTP middleware | `/backend/src/middleware/` |
+| Add unit tests | `*.test.ts` files next to source |
