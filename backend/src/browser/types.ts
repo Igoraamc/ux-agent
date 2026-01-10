@@ -6,4 +6,8 @@ export interface BrowserAdapter {
   screenshot(path?: string): Promise<Buffer>;
   close(): Promise<void>;
   getInteractiveElements(): Promise<DetectedElement[]>;
+  click(selector: string): Promise<void>;
+  type(selector: string, text: string): Promise<void>;
+  scroll(direction: "up" | "down"): Promise<void>;
+  waitForLoadState(): Promise<void>;
 }

@@ -1,7 +1,6 @@
 import { chromium } from "playwright";
 import type { Browser, Page } from "playwright";
 import { createElementDetector } from "./detector.js";
-import { validateUrl } from "../utils/validate.js";
 import type { BrowserAdapter } from "./types.js";
 
 export function createPlaywrightAdapter(): BrowserAdapter {
@@ -48,5 +47,34 @@ export function createPlaywrightAdapter(): BrowserAdapter {
     },
 
     getInteractiveElements: detector.getInteractiveElements,
+
+    async click(selector: string) {
+      if (!page) {
+        throw new Error("Browser not initialized. Call initialize() first.");
+      }
+      await page.click(selector);
+    },
+
+    async type(selector: string, text: string) {
+      if (!page) {
+        throw new Error("Browser not initialized. Call initialize() first.");
+      }
+      await page.fill(selector, text);
+    },
+
+    async scroll(direction: "up" | "down") {
+      if (!page) {
+        throw new Error("Browser not initialized. Call initialize() first.");
+      }
+      const scrollAmount = direction === "down" ? 500 : -500;
+      await page.evaluate((amount) => window.scrollBy(0, amount), scrollAmount);
+    },
+
+    async waitForLoadState() {
+      if (!page) {
+        throw new Error("Browser not initialized. Call initialize() first.");
+      }
+      await page.waitForLoadState("networkidle");
+    },
   };
 }

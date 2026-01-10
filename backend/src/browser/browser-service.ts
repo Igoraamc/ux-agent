@@ -37,5 +37,17 @@ export function createBrowserService(adapter: BrowserAdapter) {
     async getInteractiveElements() {
       return await adapter.getInteractiveElements();
     },
+    async click(selector: string) {
+      await adapter.click(selector);
+    },
+    async type(selector: string, text: string) {
+      await adapter.type(selector, text);
+    },
+    async scroll(direction: "up" | "down") {
+      await adapter.scroll(direction);
+    },
+    async waitForLoadState() {
+      await adapter.waitForLoadState();
+    },
   };
 }
