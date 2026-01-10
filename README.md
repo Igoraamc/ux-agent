@@ -125,10 +125,15 @@ See [Backend README](./backend/README.md) for detailed security implementation.
 - System prompt with security guardrails
 - Agent loop with action execution
 - Hono API server with SSE streaming
+- Database schema + persistence (SQLite + Drizzle)
+- API Endpoints:
+    - `POST /run` - Start agent run
+    - `GET /runs` - List runs
+    - `GET /runs/:id` - Get run details
+    - `GET /runs/:id/steps/:stepNumber` - Get step details
 
 ### Next Steps
 
-- Database schema + persistence
 - Frontend UI
 
 ## License

@@ -17,37 +17,52 @@ cp .env.example .env
 bun run dev        # Development mode with hot reload
 bun run start      # Production mode
 bun run screenshot # Run screenshot example
+bun run db:generate # Generate migrations
+bun run db:migrate  # Run migrations
 ```
 
 ## Project Structure
 
 ```
-src/
-├── agent/
-│   ├── annotator.ts        # Draw numbered boxes on screenshots
-│   └── loop.ts             # Agent loop orchestration
-├── ai/
-│   ├── actions.ts          # Action type definitions
-│   ├── claude.ts           # Claude API client and agent
-│   ├── guardrails/
-│   │   └── input.ts        # Prompt validation and injection detection
-│   ├── prompts.ts          # System prompt for the agent
-│   └── tools.ts            # Tool definitions for Claude
-├── browser/
-│   ├── browser-service.ts  # Browser service with domain lock
-│   ├── detector.ts         # Find interactive elements
-│   ├── playwright.ts       # Playwright adapter
-│   ├── selectors.ts        # Generate unique CSS selectors
-│   └── types.ts            # Browser adapter interface
-├── routes/
-│   ├── index.ts            # Route aggregator
-│   └── agent.ts            # Agent run endpoint with SSE
-├── types/
-│   └── index.ts            # Shared TypeScript types
-├── utils/
-│   └── validate.ts         # URL validation
-├── index.ts                # Server entry point
-└── screenshot-example.ts   # Test script
+backend/
+├── data/                   # SQLite database file
+├── drizzle/                # Database migrations
+├── src/
+│   ├── agent/
+│   │   ├── annotator.ts    # Draw numbered boxes on screenshots
+│   │   ├── executor.ts     # Agent action execution logic
+│   │   ├── loop.ts         # Agent loop orchestration
+│   │   └── persistence.ts  # Database persistence for runs and steps
+│   ├── ai/
+│   │   ├── actions.ts      # Action type definitions
+│   │   ├── claude.ts       # Claude API client and agent
+│   │   ├── guardrails/
+│   │   │   └── input.ts    # Prompt validation and injection detection
+│   │   ├── prompts.ts      # System prompt for the agent
+│   │   └── tools.ts        # Tool definitions for Claude
+│   ├── browser/
+│   │   ├── browser-service.ts # Browser service with domain lock
+│   │   ├── detector.ts     # Find interactive elements
+│   │   ├── playwright.ts   # Playwright adapter
+│   │   ├── selectors.ts    # Generate unique CSS selectors
+│   │   └── types.ts        # Browser adapter interface
+│   ├── db/
+│   │   ├── index.ts        # Database client initialization
+│   │   └── schema.ts       # Drizzle schema definitions
+│   ├── routes/
+│   │   ├── index.ts        # Route aggregator
+│   │   ├── agent.ts        # Agent run endpoint with SSE
+│   │   └── runs.ts         # Run and Step history endpoints
+│   ├── types/
+│   │   └── index.ts        # Shared TypeScript types
+│   ├── utils/
+│   │   ├── uuid.ts         # UUID v7 generation
+│   │   └── validate.ts     # URL validation
+│   ├── index.ts            # Server entry point
+│   └── screenshot-example.ts # Test script
+├── drizzle.config.ts       # Drizzle configuration
+├── package.json            # Dependencies and scripts
+└── tsconfig.json           # TypeScript configuration
 ```
 
 ## Environment Variables
@@ -100,7 +115,7 @@ const INTERACTIVE_SELECTORS = [
   'textarea',
   '[role="button"]',
   '[role="link"]',
-  '[onclick]',
+  '[onclick]'
 ];
 ```
 
@@ -221,18 +236,37 @@ Starts an agent run and streams progress via SSE.
 }
 ```
 
-**Validation:**
-- `url` - Must pass URL blocklist validation
-- `flowDescription` - Max 10,000 chars, no injection patterns
-- `expectedResult` - Max 10,000 chars, no injection patterns
-
 **Response:** Server-Sent Events stream
+
+### Get Runs
+
+```
+GET /runs
+```
+
+Returns a list of the latest 50 runs.
+
+### Get Run Details
+
+```
+GET /runs/:id
+```
+
+Returns details of a specific run, including all steps and base64 screenshots.
+
+### Get Step Details
+
+```
+GET /runs/:id/steps/:stepNumber
+```
+
+Returns details of a specific step within a run, including the base64 screenshot.
 
 ### SSE Events
 
 | Event | Description | Data |
 |-------|-------------|------|
-| `start` | Agent started | `{url, flowDescription, expectedResult}` |
+| `start` | Agent started | `{runId, url, flowDescription, expectedResult}` |
 | `step` | Step update | `{step, phase, action?, thinking?, result?, screenshot?}` |
 | `complete` | Agent finished | `{success, summary, error?, totalSteps}` |
 
@@ -261,4 +295,28 @@ data: {"success":true,"summary":"Successfully navigated to signup page","totalSt
 
 ## Database Schema
 
-*Coming soon - using Drizzle ORM with SQLite*
+Using Drizzle ORM with SQLite.
+
+### Runs Table
+- `id`: UUID v7 (Primary Key)
+- `url`: Starting URL
+- `flowDescription`: User's requested flow
+- `expectedResult`: User's expected outcome
+- `mode`: autonomous | supervised | manual
+- `status`: pending | running | completed | failed
+- `success`: Boolean result
+- `summary`: Final summary text
+- `error`: Error message if failed
+- `timestamps`: createdAt, updatedAt, deletedAt
+
+### Steps Table
+- `id`: Auto-incrementing ID
+- `runId`: Reference to Runs table
+- `stepNumber`: Sequence number
+- `phase`: thinking | acting | result
+- `thinking`: Claude's reasoning
+- `action`: JSON string of the action
+- `result`: Outcome of the action
+- `screenshot`: WebP Buffer
+- `durationMs`: Time taken for the phase
+- `createdAt`: Timestamp
