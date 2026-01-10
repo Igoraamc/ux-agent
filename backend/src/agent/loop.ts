@@ -5,6 +5,7 @@ import { annotateScreenshot } from "./annotator.js";
 import { persistStep, updateRunStatus, createRun } from "./persistence.js";
 import { executeAction } from "./executor.js";
 import { createRunLogger, createStepLogger } from "../lib/logger.js";
+import { BotProtectionError } from "../browser/bot-detector.js";
 import type { AgentResult, StepUpdate } from "../types/index.js";
 
 const MAX_STEPS = 15;
@@ -30,6 +31,17 @@ export async function runAgentLoop(
   const steps: StepUpdate[] = [];
   const actionHistory: string[] = [];
   let stepNumber = 0;
+
+  const checkBotProtection = async () => {
+    const protection = await browser.detectBotProtection();
+    if (protection.detected) {
+      runLog.warn(
+        { type: protection.type, reason: protection.reason },
+        "Bot protection detected",
+      );
+      throw new BotProtectionError(protection);
+    }
+  };
 
   const emitUpdate = async (
     update: StepUpdate,
@@ -59,11 +71,14 @@ export async function runAgentLoop(
 
     await browser.initialize();
     await browser.goto(url);
+    await checkBotProtection();
 
     while (stepNumber < MAX_STEPS) {
       stepNumber++;
       const stepLog = createStepLogger(runId, stepNumber);
       let phaseStart = Date.now();
+
+      await checkBotProtection();
 
       const screenshot = await browser.screenshot();
       const elements = await browser.getInteractiveElements();
@@ -200,6 +215,27 @@ export async function runAgentLoop(
     return agentResult;
   } catch (error) {
     await browser.close().catch(() => {});
+
+    if (error instanceof BotProtectionError) {
+      const agentResult: AgentResult = {
+        success: false,
+        steps,
+        summary: `Bot protection detected: ${error.result.type}`,
+        error: error.result.reason,
+      };
+      runLog.warn(
+        {
+          type: error.result.type,
+          reason: error.result.reason,
+          totalSteps: stepNumber,
+          durationMs: Date.now() - runStartTime,
+        },
+        "Run blocked by bot protection",
+      );
+      await updateRunStatus(runId, "failed", agentResult);
+      return agentResult;
+    }
+
     const errorMessage = error instanceof Error ? error.message : String(error);
     const agentResult: AgentResult = {
       success: false,

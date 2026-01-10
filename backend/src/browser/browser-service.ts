@@ -49,5 +49,8 @@ export function createBrowserService(adapter: BrowserAdapter) {
     async waitForLoadState() {
       await adapter.waitForLoadState();
     },
+    async detectBotProtection() {
+      return await adapter.detectBotProtection();
+    },
   };
 }

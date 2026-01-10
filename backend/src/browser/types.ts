@@ -1,4 +1,5 @@
 import type { DetectedElement } from "../types/index.js";
+import type { BotProtectionResult } from "./bot-detector.js";
 
 export interface BrowserAdapter {
   initialize(): Promise<void>;
@@ -10,4 +11,5 @@ export interface BrowserAdapter {
   type(selector: string, text: string): Promise<void>;
   scroll(direction: "up" | "down" | "top"): Promise<void>;
   waitForLoadState(): Promise<void>;
+  detectBotProtection(): Promise<BotProtectionResult>;
 }

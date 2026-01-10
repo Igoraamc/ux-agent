@@ -1,6 +1,7 @@
 import { chromium } from "playwright";
 import type { Browser, Page } from "playwright";
 import { createElementDetector } from "./detector.js";
+import { createBotDetector } from "./bot-detector.js";
 import type { BrowserAdapter } from "./types.js";
 
 export function createPlaywrightAdapter(): BrowserAdapter {
@@ -9,6 +10,7 @@ export function createPlaywrightAdapter(): BrowserAdapter {
   let allowedDomain: string | null = null;
 
   const detector = createElementDetector(() => page);
+  const botDetector = createBotDetector(() => page);
 
   return {
     async initialize() {
@@ -80,5 +82,7 @@ export function createPlaywrightAdapter(): BrowserAdapter {
       }
       await page.waitForLoadState("networkidle");
     },
+
+    detectBotProtection: botDetector.detect,
   };
 }
