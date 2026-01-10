@@ -5,6 +5,11 @@ import { AGENT_TOOLS } from "./tools.js";
 import { SYSTEM_PROMPT } from "./prompts.js";
 import "dotenv/config";
 
+export type AgentResponse = {
+  action: AgentAction;
+  thinking: string | null;
+};
+
 export function createClaudeAgent() {
   const client = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
@@ -16,7 +21,17 @@ export function createClaudeAgent() {
       elements: DetectedElement[],
       flowDescription: string,
       expectedResult: string,
-    ) {
+      actionHistory: string[] = [],
+    ): Promise<AgentResponse> {
+      const historySection =
+        actionHistory.length > 0
+          ? `
+                  <previous-actions>
+                    ${actionHistory.map((a, i) => `<action step="${i + 1}">${a}</action>`).join("\n")}
+                  </previous-actions>
+                  `
+          : "";
+
       const response = await client.messages.create({
         max_tokens: 1000,
         system: SYSTEM_PROMPT,
@@ -34,7 +49,7 @@ export function createClaudeAgent() {
                   <expected-result>
                     ${expectedResult}
                   </expected-result>
-
+                  ${historySection}
                   <elements>
                     ${elements
                       .map(
@@ -64,7 +79,25 @@ export function createClaudeAgent() {
         tools: AGENT_TOOLS,
       });
 
-      console.log(JSON.stringify(response, null, 2));
+      let thinking: string | null = null;
+      let action: AgentAction | null = null;
+
+      for (const block of response.content) {
+        if (block.type === "text") {
+          thinking = block.text;
+        } else if (block.type === "tool_use") {
+          action = {
+            action: block.name,
+            args: block.input,
+          } as AgentAction;
+        }
+      }
+
+      if (!action) {
+        throw new Error("Claude did not return a tool use action");
+      }
+
+      return { action, thinking };
     },
   };
 }

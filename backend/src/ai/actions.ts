@@ -20,7 +20,7 @@ type WaitAction = {
 
 type DoneAction = {
   action: "done";
-  args: { summary: string; expected_result_achieved: string };
+  args: { summary: string; expected_result_achieved: boolean };
 };
 
 type FailAction = {
