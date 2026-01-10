@@ -135,6 +135,9 @@ See [Backend README](./backend/README.md) for detailed security implementation.
 ### Next Steps
 
 - Frontend UI
+- Scroll top to avoid the model to scroll all the way up after reaching the bottom of the page
+- Add logs to the application to understand what is happening
+- Add unit tests
 
 ## License
 

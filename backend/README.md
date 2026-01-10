@@ -320,3 +320,9 @@ Using Drizzle ORM with SQLite.
 - `screenshot`: WebP Buffer
 - `durationMs`: Time taken for the phase
 - `createdAt`: Timestamp
+
+## Next Steps
+
+- Scroll top to avoid the model to scroll all the way up after reaching the bottom of the page
+- Add logs to the application to understand what is happening
+- Add unit tests
