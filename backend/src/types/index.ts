@@ -1,5 +1,7 @@
 import type { AgentAction } from "../ai/actions.js";
 
+export type RunMode = "autonomous" | "supervised" | "manual";
+
 export type DetectedElement = {
   index: number;
   selector: string;

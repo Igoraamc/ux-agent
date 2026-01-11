@@ -6,23 +6,28 @@ import { persistStep, updateRunStatus, createRun } from "./persistence.js";
 import { executeAction } from "./executor.js";
 import { createRunLogger, createStepLogger } from "../lib/logger.js";
 import { BotProtectionError } from "../browser/bot-detector.js";
-import type { AgentResult, StepUpdate } from "../types/index.js";
+import type { AgentResult, StepUpdate, RunMode } from "../types/index.js";
+import type { AgentAction } from "../ai/actions.js";
 
 const MAX_STEPS = 15;
+const SUPERVISED_DELAY_MS = 3000;
 
 type OnStepUpdate = (update: StepUpdate) => void;
+type OnPause = (step: number, action: AgentAction, screenshot: Buffer) => Promise<void>;
 
 export async function runAgentLoop(
   runId: string,
   url: string,
   flowDescription: string,
   expectedResult: string,
+  mode: RunMode,
   onStepUpdate?: OnStepUpdate,
+  onPause?: OnPause,
 ): Promise<AgentResult> {
   const runLog = createRunLogger(runId);
   const runStartTime = Date.now();
 
-  runLog.info({ url, flowDescription, expectedResult }, "Run started");
+  runLog.info({ url, flowDescription, expectedResult, mode }, "Run started");
 
   const adapter = createPlaywrightAdapter();
   const browser = createBrowserService(adapter);
@@ -65,7 +70,7 @@ export async function runAgentLoop(
       url,
       flowDescription,
       expectedResult,
-      mode: "autonomous",
+      mode,
       status: "running",
     });
 
@@ -128,6 +133,16 @@ export async function runAgentLoop(
         },
         Date.now() - phaseStart,
       );
+
+      // Handle mode-specific behavior before action execution
+      if (mode === "supervised") {
+        stepLog.debug({ delayMs: SUPERVISED_DELAY_MS }, "Supervised mode delay");
+        await new Promise((resolve) => setTimeout(resolve, SUPERVISED_DELAY_MS));
+      } else if (mode === "manual" && onPause) {
+        stepLog.info("Manual mode: waiting for approval");
+        await onPause(stepNumber, response.action, annotated);
+        stepLog.info("Manual mode: approval received");
+      }
 
       phaseStart = Date.now();
       const result = await executeAction(browser, response.action, elements);

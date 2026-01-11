@@ -20,6 +20,7 @@ async function main() {
     url,
     flowDescription,
     expectedResult,
+    "autonomous",
     (update: StepUpdate) => {
       console.log(`[Step ${update.step}] ${update.phase.toUpperCase()}`);
 
