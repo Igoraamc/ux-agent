@@ -33,12 +33,13 @@ An AI-powered autonomous UX testing agent that uses Claude API and Playwright to
 ```
 ux-agent/
 ├── backend/          # Hono API server
-├── frontend/         # SvelteKit app (planned)
+├── frontend/         # SvelteKit app
 └── README.md
 ```
 
 See component READMEs for details:
 - [Backend](./backend/README.md)
+- [Frontend](./frontend/README.md)
 
 ## Quick Start
 
@@ -51,17 +52,27 @@ See component READMEs for details:
 ### Installation
 
 ```bash
+# Backend
 cd backend
 bun install
 npx playwright install chromium
 cp .env.example .env
 # Add your ANTHROPIC_API_KEY to .env
+
+# Frontend
+cd ../frontend
+bun install
 ```
 
 ### Running
 
 ```bash
+# Terminal 1 - Backend (localhost:3000)
 cd backend
+bun run dev
+
+# Terminal 2 - Frontend (localhost:5173)
+cd frontend
 bun run dev
 ```
 
@@ -116,6 +127,7 @@ See [Backend README](./backend/README.md) for detailed security implementation.
 
 ### Implemented
 
+**Backend**
 - Playwright browser manager with adapter pattern
 - Interactive element detection
 - Unique selector generation
@@ -128,21 +140,21 @@ See [Backend README](./backend/README.md) for detailed security implementation.
 - Agent loop with action execution
 - Hono API server with SSE streaming
 - Database schema + persistence (SQLite + Drizzle)
+- Structured logging with Pino
+- Unit tests with Bun test (93 tests)
 - API Endpoints:
     - `POST /run` - Start agent run
     - `GET /runs` - List runs
     - `GET /runs/:id` - Get run details
     - `GET /runs/:id/steps/:stepNumber` - Get step details
 
-### Next Steps
-
-- Frontend UI
-
-### Recently Completed
-
-- Scroll to top action (scroll direction: "top")
-- Structured logging with Pino
-- Unit tests with Bun test (93 tests)
+**Frontend**
+- SvelteKit app with Svelte 5 (runes)
+- Mobile-first responsive design
+- Real-time test execution via SSE
+- Run history browsing
+- New test creation modal
+- Navigation drawer
 
 ## License
 

@@ -1,38 +1,80 @@
-# sv
+# UX Agent Frontend
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+SvelteKit frontend for the UX Agent autonomous testing tool. Provides a mobile-first UI for starting tests, viewing real-time execution progress, and browsing run history.
 
-## Creating a project
+## Tech Stack
 
-If you're seeing this, you've probably already done this step. Congrats!
+| Technology | Purpose |
+|------------|---------|
+| SvelteKit 2 | Framework |
+| Svelte 5 | UI with runes reactivity |
+| TypeScript | Type safety |
+| Tailwind CSS 4 | Styling |
+| Bun | Package manager |
+| Vite 7 | Build tool |
 
-```sh
-# create a new project in the current directory
-npx sv create
+## Features
 
-# create a new project in my-app
-npx sv create my-app
+- **Live Test Execution** - Real-time streaming updates via SSE
+- **Run History** - Browse and view past test runs
+- **Three Execution Modes** - Autonomous, supervised, and manual approval
+- **Mobile-First Design** - Responsive layout with navigation drawer
+- **New Test Modal** - Quick test creation with URL, flow description, and expected result
+
+## Project Structure
+
+```
+frontend/
+├── src/
+│   ├── lib/
+│   │   ├── components/     # Reusable UI components
+│   │   ├── services/       # API communication
+│   │   ├── stores/         # Svelte stores (activeRun, navigation)
+│   │   └── types/          # TypeScript definitions
+│   └── routes/
+│       ├── active/         # Live test execution view
+│       ├── runs/           # Run history + details
+│       └── settings/       # Settings page
+├── CLAUDE.md               # Detailed development guide
+└── package.json
 ```
 
-## Developing
+## Development
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+```bash
+# Install dependencies
+bun install
 
-```sh
-npm run dev
+# Start dev server (localhost:5173)
+bun run dev
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+# Type check
+bun run check
+
+# Production build
+bun run build
 ```
 
-## Building
+## Environment Variables
 
-To create a production version of your app:
-
-```sh
-npm run build
+```bash
+VITE_API_URL=http://localhost:3000  # Backend API URL
 ```
 
-You can preview the production build with `npm run preview`.
+## Pages
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+| Route | Description |
+|-------|-------------|
+| `/` | Redirects to /active |
+| `/active` | Live test execution view |
+| `/runs` | Run history list |
+| `/runs/:id` | Individual run details |
+| `/settings` | Settings page |
+
+## Documentation
+
+See [CLAUDE.md](./CLAUDE.md) for detailed development documentation including:
+- Component API reference
+- Store usage patterns
+- Service layer details
+- Code conventions for Svelte 5
