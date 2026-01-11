@@ -4,6 +4,7 @@ import { validateUrl } from "../utils/validate.js";
 import { validatePrompt } from "../ai/guardrails/input.js";
 import { runAgentLoop } from "../agent/loop.js";
 import { generateUUIDv7 } from "../utils/uuid.js";
+import { logger } from "../lib/logger.js";
 import type { StepUpdate, RunMode } from "../types/index.js";
 import type { AgentAction } from "../ai/actions.js";
 
@@ -76,6 +77,15 @@ agent.post("/run", async (c) => {
     };
 
     const runId = generateUUIDv7();
+
+    logger.info({
+      runId,
+      url,
+      flowDescription,
+      expectedResult,
+      mode,
+      source: "api",
+    }, "Starting run from API");
 
     await sendEvent("start", {
       runId,

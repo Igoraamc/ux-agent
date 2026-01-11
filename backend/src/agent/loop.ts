@@ -85,6 +85,9 @@ export async function runAgentLoop(
 
       await checkBotProtection();
 
+      // Wait for page stability before capturing state
+      await browser.waitForLoadState();
+
       const screenshot = await browser.screenshot();
       const elements = await browser.getInteractiveElements();
       const annotated = await annotateScreenshot(screenshot, elements);

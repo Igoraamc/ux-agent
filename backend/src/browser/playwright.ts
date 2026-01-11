@@ -26,7 +26,10 @@ export function createPlaywrightAdapter(): BrowserAdapter {
         throw new Error("Browser not initialized. Call initialize() first.");
       }
 
-      await page.goto(url);
+      await page.goto(url, { waitUntil: "domcontentloaded" });
+      await page.waitForLoadState("networkidle").catch(() => {
+        // Timeout is acceptable - some pages never reach network idle
+      });
     },
 
     async screenshot(path?: string) {
@@ -55,6 +58,10 @@ export function createPlaywrightAdapter(): BrowserAdapter {
         throw new Error("Browser not initialized. Call initialize() first.");
       }
       await page.click(selector);
+      // Wait for potential navigation or dynamic content loading
+      await page.waitForLoadState("networkidle").catch(() => {
+        // Timeout is acceptable - not all clicks trigger navigation
+      });
     },
 
     async type(selector: string, text: string) {
